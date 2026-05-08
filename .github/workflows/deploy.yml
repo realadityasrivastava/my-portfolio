@@ -1,63 +1,65 @@
 name: Deploy Next.js to GitHub Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Build job
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
+      # Setup Node targeting the subfolder package-lock
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
+          cache-dependency-path: ./aditya-portfolio/package-lock.json
           
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
           static_site_generator: next
           
+      # Cache specifically looking inside aditya-portfolio
       - name: Restore cache
         uses: actions/cache@v4
         with:
           path: |
-            .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+            ./aditya-portfolio/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('aditya-portfolio/**/package-lock.json') }}-${{ hashFiles('aditya-portfolio/**.[jt]s', 'aditya-portfolio/**.[jt]sx') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles('aditya-portfolio/**/package-lock.json') }}-
             
+      # Install dependencies INSIDE the folder
       - name: Install dependencies
         run: npm ci
+        working-directory: ./aditya-portfolio
         
+      # Build INSIDE the folder
       - name: Build with Next.js
         run: npm run build
+        working-directory: ./aditya-portfolio
         
+      # Upload the artifact from the correct subfolder out path
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: ./aditya-portfolio/out
 
-  # Deployment job
   deploy:
     environment:
       name: github-pages
